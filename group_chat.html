@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Group Chat Page</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .chat-container {
+        width: 100%;
+        max-width: 800px;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+      .chat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .chat-messages {
+        height: 400px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 10px;
+        margin-bottom: 20px;
+      }
+      .chat-input {
+        display: flex;
+        gap: 10px;
+      }
+      .chat-input input {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      .chat-input button {
+        padding: 10px 20px;
+        background-color: #007bff;
+        border: none;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .chat-input button:hover {
+        background-color: #0056b3;
+      }
+      .message {
+        margin-bottom: 10px;
+      }
+      .message .sender {
+        font-weight: bold;
+      }
+      .message .content {
+        margin-left: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat-container">
+      <div class="chat-header">
+        <h2>Group Chat</h2>
+        <button id="logout">Logout</button>
+      </div>
+      <div class="chat-input">
+        <input type="text" id="groupId" placeholder="Group ID" />
+        <button id="join-group">Join Group</button>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input">
+        <input type="text" id="message" placeholder="Type your message" />
+        <button id="send">Send</button>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+    <script>
+      let stompClient;
+      const jwtToken = localStorage.getItem("jwtToken");
+      const userDetails = JSON.parse(localStorage.getItem("userDetails")) || {};
+      const groupIdInput = document.getElementById("groupId");
+      const messageInput = document.getElementById("message");
+      const chatMessages = document.getElementById("chat-messages");
+      let currentGroupId = null;
+
+      function connect() {
+        stompClient = new StompJs.Client({
+          brokerURL: "ws://localhost:8080/ws",
+          connectHeaders: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+          debug: (str) => console.log(str),
+          reconnectDelay: 5000,
+          heartbeatIncoming: 4000,
+          heartbeatOutgoing: 4000,
+        });
+
+        stompClient.onConnect = () => {
+          console.log("Connected to WebSocket");
+          if (currentGroupId) {
+            subscribeToGroup();
+          }
+          alert(`Connected to Group: ${currentGroupId}`);
+        };
+
+        stompClient.onStompError = (frame) => {
+          console.error("Broker Error: " + frame.headers["message"]);
+          if (frame.headers["message"].includes("Invalid JWT token")) {
+            alert("Session expired. Please log in again.");
+            localStorage.removeItem("jwtToken");
+            window.location.href = "login.html"; // Redirect to login page
+          }
+        };
+
+        stompClient.activate();
+      }
+
+      function subscribeToGroup() {
+        if (currentGroupId) {
+          stompClient.subscribe(`/topic/group-${currentGroupId}`, (message) => {
+            const msg = JSON.parse(message.body);
+            // displayMessage(msg.senderUsername, msg.content);
+            displayMessage(msg.sender, msg.content);
+          });
+        }
+      }
+
+      function generateUUID() {
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+          /[xy]/g,
+          function (c) {
+            const r = (Math.random() * 16) | 0;
+            const v = c === "x" ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+          }
+        );
+      }
+
+      function joinGroup() {
+        const groupId = groupIdInput.value;
+        if (!groupId) {
+          alert("Please enter a valid Group ID to join!");
+          return;
+        }
+        const uuidPattern =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidPattern.test(groupId)) {
+          alert("Invalid Group ID format. Please check and try again.");
+          return;
+        }
+        currentGroupId = groupId;
+        connect();
+      }
+
+      function sendMessage() {
+        if (!currentGroupId) {
+          console.error("Join a group first!");
+          alert("Join a group first!");
+          return;
+        }
+        const content = messageInput.value;
+
+        if (!content) {
+          console.error("Message content is empty");
+          alert("Message content is required!");
+          return;
+        }
+
+        const message = {
+          id: generateUUID(),
+          groupId: currentGroupId,
+          content,
+          // senderUsername: userDetails.username || "Unknown User",
+          sender: userDetails.username || "Unknown User", // Include sender username
+        };
+
+        console.log(
+          `Publishing message to /app/group/${currentGroupId}/send:`,
+          message
+        );
+
+        try {
+          stompClient.publish({
+            destination: `/chaat/group/${currentGroupId}/send`,
+            body: JSON.stringify(message),
+          });
+          console.log(`Message sent: ${content}`);
+        } catch (e) {
+          console.error("Failed to publish message:", e.message);
+        }
+
+        messageInput.value = "";
+      }
+
+      function displayMessage(sender, content) {
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("message");
+
+        const senderDisplayName =
+          sender === userDetails.username ? "You" : sender;
+
+        messageElement.innerHTML = `<span class="sender">${senderDisplayName}:</span> <span class="content">${content}</span>`;
+        // messageElement.innerHTML = `<span class="sender">${sender}:</span> <span class="content">${content}</span>`;
+        chatMessages.appendChild(messageElement);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      document
+        .getElementById("join-group")
+        .addEventListener("click", joinGroup);
+      document.getElementById("send").addEventListener("click", sendMessage);
+      document.getElementById("logout").addEventListener("click", () => {
+        localStorage.removeItem("jwtToken");
+        localStorage.removeItem("userDetails");
+        alert("Logged out");
+        window.location.href = "login.html";
+      });
+    </script>
+  </body>
+</html>

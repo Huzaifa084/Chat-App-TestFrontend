@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login Page</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f4f4f4;
+        flex-direction: column;
+      }
+      .login-container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        width: 300px;
+        margin-bottom: 20px;
+      }
+      .login-container h2 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+      }
+      .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      .form-group button {
+        width: 100%;
+        padding: 10px;
+        background-color: #007bff;
+        border: none;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .form-group button:hover {
+        background-color: #0056b3;
+      }
+      .error {
+        color: red;
+        font-size: 0.9em;
+        margin-top: 10px;
+      }
+      .button-container {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+      }
+      .button-container button {
+        padding: 10px 20px;
+        background-color: #28a745;
+        border: none;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .button-container button:hover {
+        background-color: #218838;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <h2>Login</h2>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            placeholder="Enter your email"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            placeholder="Enter your password"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <button type="submit">Login</button>
+        </div>
+        <div class="error" id="error-message"></div>
+      </form>
+    </div>
+
+    <!-- Choice Modal After Login -->
+    <div class="button-container" id="chat-options" style="display:none;">
+      <button id="one-to-one">Go to One-on-One Chat</button>
+      <button id="group-chat">Go to Group Chat</button>
+    </div>
+
+    <script>
+      const loginForm = document.getElementById("login-form");
+      const errorMessage = document.getElementById("error-message");
+      const chatOptions = document.getElementById("chat-options");
+
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        try {
+          const response = await fetch("http://localhost:8080/api/auth/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email, password }),
+          });
+
+          const data = await response.json();
+          console.log(data); // Log the entire response
+
+          if (response.ok) {
+            if (data.data) {
+              // Store JWT token and user details in localStorage
+              localStorage.setItem("jwtToken", data.data.jwtToken);
+              localStorage.setItem(
+                "userDetails",
+                JSON.stringify({
+                  username: data.data.username,
+                  email: data.data.email,
+                  name: data.data.name,
+                })
+              );
+
+              // Show chat options after login
+              chatOptions.style.display = "flex";
+            } else {
+              errorMessage.textContent = "Unexpected response structure.";
+              console.error("Unexpected response format:", data);
+            }
+          } else {
+            errorMessage.textContent =
+              data.message || "Login failed. Please check your credentials.";
+          }
+        } catch (error) {
+          errorMessage.textContent =
+            "An error occurred. Please try again later.";
+          console.error("Error:", error);
+        }
+      });
+
+      // Event listeners for the buttons to navigate to respective chat pages
+      document.getElementById("one-to-one").addEventListener("click", () => {
+        window.location.href = "chat.html"; // Navigate to single chat page
+      });
+
+      document.getElementById("group-chat").addEventListener("click", () => {
+        window.location.href = "group_chat.html"; // Navigate to group chat page
+      });
+    </script>
+  </body>
+</html>
+
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login Page</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f4f4f4;
+      }
+      .login-container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        width: 300px;
+      }
+      .login-container h2 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+      }
+      .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      .form-group button {
+        width: 100%;
+        padding: 10px;
+        background-color: #007bff;
+        border: none;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .form-group button:hover {
+        background-color: #0056b3;
+      }
+      .error {
+        color: red;
+        font-size: 0.9em;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <h2>Login</h2>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            placeholder="Enter your email"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            placeholder="Enter your password"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <button type="submit">Login</button>
+        </div>
+        <div class="error" id="error-message"></div>
+      </form>
+    </div>
+
+    <script>
+      const loginForm = document.getElementById("login-form");
+      const errorMessage = document.getElementById("error-message");
+
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        try {
+          const response = await fetch("http://localhost:8080/api/auth/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email, password }),
+          });
+
+          const data = await response.json();
+          console.log(data); // Log the entire response
+
+          if (response.ok) {
+            if (data.data) {
+              // Store JWT token and user details in localStorage
+              localStorage.setItem("jwtToken", data.data.jwtToken);
+              localStorage.setItem(
+                "userDetails",
+                JSON.stringify({
+                  username: data.data.username,
+                  email: data.data.email,
+                  name: data.data.name,
+                })
+              );
+
+              // Navigate to chat page
+              console.log("Redirection: Navigating to chat.html...");
+              window.location.href = "chat.html";
+            } else {
+              errorMessage.textContent = "Unexpected response structure.";
+              console.error("Unexpected response format:", data);
+            }
+          } else {
+            errorMessage.textContent =
+              data.message || "Login failed. Please check your credentials.";
+          }
+        } catch (error) {
+          errorMessage.textContent =
+            "An error occurred. Please try again later.";
+          console.error("Error:", error);
+        }
+      });
+    </script>
+  </body>
+</html> -->
