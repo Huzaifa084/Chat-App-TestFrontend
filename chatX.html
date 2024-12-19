@@ -177,6 +177,7 @@
       const recipientInput = document.getElementById("recipient");
       const messageInput = document.getElementById("message");
       let page = 0;
+      const pageSize = 15;
 
       // Update user details
       document.getElementById("logged-in-username").textContent = `Name: ${
@@ -220,6 +221,12 @@
               );
             }
           });
+          // Add scroll listener to fetch older messages on scroll
+          chatMessages.addEventListener("scroll", (e) => {
+            if (e.target.scrollTop === 0) {
+              loadPreviousChat(); // Fetch older messages
+            }
+          });
         };
 
         stompClient.activate();
@@ -259,10 +266,9 @@
         }
 
         stompClient.publish({
-          destination: `/chaat/chat/previous/${userDetails.username}/${recipient}`,
-          body: JSON.stringify(page),
+          destination: `/chaat/chat/previous/${userDetails.username}/${recipient}/${page}`,
+          body: JSON.stringify({}),
         });
-
         page++;
       }
 
@@ -315,6 +321,14 @@
       document
         .getElementById("load-previous")
         .addEventListener("click", loadPreviousChat);
+
+      document
+        .getElementById("chat-messages")
+        .addEventListener("scroll", (e) => {
+          if (e.target.scrollTop === 0) {
+            loadMessages(); // Fetch older messages
+          }
+        });
 
       connect();
     </script>
