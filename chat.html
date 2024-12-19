@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -72,6 +73,14 @@
     <div class="chat-container">
       <div class="chat-header">
         <h2>Chat</h2>
+        <span
+          id="logged-in-username"
+          style="font-weight: bold; color: #007bff"
+        ></span>
+        <span
+          id="logged-in-userEmail"
+          style="font-weight: bold; color: #007bff"
+        ></span>
         <button id="logout">Logout</button>
       </div>
       <div class="chat-messages" id="chat-messages"></div>
@@ -86,10 +95,25 @@
     <script>
       let stompClient;
       const jwtToken = localStorage.getItem("jwtToken");
-      const userDetails = JSON.parse(localStorage.getItem("userDetails")) || {}; // User details stored after login
+      const userDetails = JSON.parse(localStorage.getItem("userDetails")) || {};
       const chatMessages = document.getElementById("chat-messages");
       const recipientInput = document.getElementById("recipient");
       const messageInput = document.getElementById("message");
+      const loggedInUserNameElement =
+        document.getElementById("logged-in-username");
+      const loggedInUserEmailElement = document.getElementById(
+        "logged-in-userEmail"
+      );
+
+      function displayLoggedInUser() {
+        if (userDetails.username) {
+          loggedInUserNameElement.textContent = `User Name: ${userDetails.username}`;
+          loggedInUserEmailElement.textContent = `User Email: ${userDetails.email}`;
+        } else{
+          loggedInUserNameElement.textContent = "User Name: Unknown User";
+          loggedInUserEmailElement.textContent = "User Email: Unknown User";
+        }
+      }
 
       function connect() {
         stompClient = new StompJs.Client({
@@ -141,7 +165,7 @@
         const message = {
           id: generateUUID(),
           content,
-          from: userDetails.username || "Unknown User", // Use logged-in user's username
+          from: userDetails.username || "Unknown User",
           to: recipient,
         };
 
@@ -171,6 +195,7 @@
         window.location.href = "login.html"; // Redirect to login page
       });
 
+      displayLoggedInUser();
       connect();
     </script>
   </body>
